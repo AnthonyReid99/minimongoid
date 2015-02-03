@@ -201,6 +201,8 @@ class @Minimongoid
 
     return @ if not @isValid()
 
+    @_updatedAt = new Date()
+
     # attr['_type'] = @constructor._type if @constructor._type?
     
     if @id?
@@ -272,8 +274,9 @@ class @Minimongoid
   @to_s: ->
     if @_collection then @_collection._name else "embedded"
 
-  @create: (attr) ->
-    attr.createdAt ||= new Date()
+  @create: (attr = {}) ->
+    attr._createdAt ||= new Date()
+    attr._updatedAt ||= new Date()
     attr = @before_create(attr) if @before_create
     doc = @init(attr)
     doc = doc.save(attr)
@@ -300,9 +303,9 @@ class @Minimongoid
     if doc = @_collection.findOne(selector, options)
       @init doc
 
-  # kind of a silly method, just does a findOne with reverse sort on createdAt
+  # kind of a silly method, just does a findOne with reverse sort on _createdAt
   @last: (selector = {}, options = {}) ->
-    options.sort = createdAt: -1
+    options.sort = _createdAt: -1
     if doc = @_collection.findOne(selector, options)
       @init doc
 
