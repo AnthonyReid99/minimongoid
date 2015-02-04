@@ -281,6 +281,7 @@ class @Minimongoid
     if @_collection then @_collection._name else "embedded"
 
   @create: (attr = {}) ->
+    attr = _.extend attr, @defaults if @defaults?
     attr._createdAt ||= new Date()
     attr._updatedAt ||= new Date()
     attr = @before_create(attr) if @before_create
