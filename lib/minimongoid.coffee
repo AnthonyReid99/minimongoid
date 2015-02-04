@@ -195,7 +195,13 @@ class @Minimongoid
     @errors = false
 
     for k,v of attr
-      @[k] = v
+      esto = this
+      # Allow nested attributes to be specified with dot notation
+      keys = k.split('.')
+      for part in keys.slice(0,-1)
+        esto[part] or= {}
+        esto = esto[part]
+      esto[keys.pop()] = v
 
     attr = @constructor.before_save(attr) if @constructor.before_save
 
