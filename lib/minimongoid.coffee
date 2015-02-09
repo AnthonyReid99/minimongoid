@@ -194,6 +194,11 @@ class @Minimongoid
     # reset errors before running isValid()
     @errors = false
 
+    if arguments.length is 2
+      argOne = arguments[0]
+      attr = {}
+      attr[argOne] = arguments[1]
+
     for k,v of attr
       esto = this
       # Allow nested attributes to be specified with dot notation
