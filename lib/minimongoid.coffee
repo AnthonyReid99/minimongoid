@@ -206,7 +206,17 @@ class @Minimongoid
       for part in keys.slice(0,-1)
         esto[part] or= {}
         esto = esto[part]
-      esto[keys.pop()] = v
+
+      finalKey = keys.pop()
+
+      # If the collection has a simpleschema defined
+      if @constructor._collection?._c2?._simpleSchema?
+
+        # validate current field before updating
+        if not @constructor._collection._c2._simpleSchema.namedContext('default').validateOne(attr, k)
+          continue
+
+      esto[finalKey] = v
 
     attr = @constructor.before_save(attr) if @constructor.before_save
 
