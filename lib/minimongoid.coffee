@@ -34,6 +34,7 @@ class @Minimongoid
 
     # load in all the passed attrs 
     for name, value of attr
+
       continue if name.match(/^_id/)
       if name.match(/_id$/) and (value instanceof Meteor.Collection.ObjectID)
         @[name] = value._str
@@ -42,6 +43,16 @@ class @Minimongoid
         # also pass "self" along as the parent model
         class_name = embeds_many.class_name || _.classify(_.singularize(name))
         @[name] = global[class_name].modelize(value, @)
+      else if name.indexOf('.') != -1
+        keys = name.split('.')
+        esto = this
+        for part in keys.slice(0,-1)
+
+          esto[part] or= {}
+          esto = esto[part]
+
+        finalKey = keys.pop()
+        esto[finalKey] = value
       else
         @[name] = value
 
@@ -86,9 +97,9 @@ class @Minimongoid
           # first consider any passed in selector options
           mod_selector = _.extend mod_selector, selector
           # e.g. where {user_id: @id}
-          if global[class_name]
-            HasManyRelation.fromRelation(global[class_name].where(mod_selector, options), foreign_key, @id)
-
+          if global.Model?[class_name]
+            HasManyRelation.fromRelation(global.Model[class_name].where(mod_selector, options), foreign_key, @id)
+          else
 
     # set up HABTM methods, e.g. user.friends()
     for habtm in @constructor.has_and_belongs_to_many
@@ -191,6 +202,7 @@ class @Minimongoid
     true
 
   save: (attr = {}) ->
+
     # reset errors before running isValid()
     @errors = false
 
@@ -200,14 +212,6 @@ class @Minimongoid
       attr[argOne] = arguments[1]
 
     for k,v of attr
-      esto = this
-      # Allow nested attributes to be specified with dot notation
-      keys = k.split('.')
-      for part in keys.slice(0,-1)
-        esto[part] or= {}
-        esto = esto[part]
-
-      finalKey = keys.pop()
 
       # If the collection has a simpleschema defined
       if @constructor._collection?._c2?._simpleSchema?
@@ -216,7 +220,29 @@ class @Minimongoid
         if not @constructor._collection._c2._simpleSchema.namedContext('default').validateOne(attr, k)
           continue
 
-      esto[finalKey] = v
+
+      # Allow nested attributes to be specified with dot notation
+      if k.indexOf('.') != -1
+        keys = k.split('.')
+        esto = this
+        attrPath = attr
+        for part in keys.slice(0,-1)
+
+          esto[part] or= {}
+          esto = esto[part]
+          if not @id?
+            attrPath[part] or= {}
+            attrPath = attrPath[part]
+
+        finalKey = keys.pop()
+
+        esto[finalKey] = v
+        if not @id?
+          attrPath[finalKey] = v
+          delete attr[k]
+      else
+        esto = this
+        esto[k] = v
 
     attr = @constructor.before_save(attr) if @constructor.before_save
 
@@ -230,7 +256,7 @@ class @Minimongoid
       @constructor._collection.update @id, { $set: attr }
     else
       @id = @_id = @constructor._collection.insert attr
-    
+
     if @constructor.after_save
       @constructor.after_save(@)
 
@@ -296,6 +322,10 @@ class @Minimongoid
     if @_collection then @_collection._name else "embedded"
 
   @create: (attr = {}) ->
+    if arguments.length is 2
+      argOne = arguments[0]
+      attr = {}
+      attr[argOne] = arguments[1]
     attr = _.extend attr, @defaults if @defaults?
     attr._createdAt ||= new Date()
     attr._updatedAt ||= new Date()
