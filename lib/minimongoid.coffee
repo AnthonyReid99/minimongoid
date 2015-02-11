@@ -249,6 +249,7 @@ class @Minimongoid
     return @ if not @isValid()
 
     @_updatedAt = new Date()
+    attr['_updatedAt'] = @_updatedAt
 
     # attr['_type'] = @constructor._type if @constructor._type?
     
